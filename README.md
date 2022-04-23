@@ -1,1 +1,4 @@
 # Operator-approach-to-epidemic-models
+This repository includes the code used in the Master's Thesis titled "Operator approach to epidemic systems in networks", presented in 2022 at the Universidad Nacional de Colombia. The results are organized in Jupyter Notebooks, they contain the code of all plots and results presented in the main thesis which will be accessible through the Universidad Nacional de Colombia thesis repository (https://repositorio.unal.edu.co/). I also include the presentations created during the development of this work, they summarize the results presented in the text in a graphic presentation. 
+To run the code it is necessary to have installed the anaconda framework and some basic python packages such as numpy, scipy and seaborn. 
+I personally encourage the observer to remit any questions to the email joarojasve@unal.edu.co. 
