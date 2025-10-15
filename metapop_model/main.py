@@ -2,9 +2,9 @@
 import os
 import numpy as np
 import scipy.sparse as sp
-from .model import generate_transition_matrix
-from .simulation import run_simulation # Ya no se importa create_delta_t_matrix
-from .plotting import create_heatmap_video
+from model import generate_transition_matrix
+from simulation import run_simulation # Ya no se importa create_delta_t_matrix
+from plotting import create_heatmap_video
 
 def main():
     """
