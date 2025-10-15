@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+import matplotlib.colors as colors
 from IPython.display import HTML
 
 def aggregate_probabilities(history, states, N_total):
@@ -25,6 +26,7 @@ def aggregate_probabilities(history, states, N_total):
 def create_heatmap_video(history, states, N_total, delta_t, filename="epidemic_heatmap.mp4"):
     """
     Crea un video de heatmaps que muestra la evolución de las probabilidades P(S_total, I_total).
+    Usa una escala logarítmica para el color para una mejor visualización.
 
     Args:
         history (list): El historial de vectores de estado de la simulación.
@@ -38,38 +40,44 @@ def create_heatmap_video(history, states, N_total, delta_t, filename="epidemic_h
 
     fig, ax = plt.subplots(figsize=(8, 6))
     
-    # Usamos el primer fotograma para establecer los límites del color
+    # --- Configuración de la escala logarítmica ---
     vmax = np.max(aggregated_data)
-    if vmax == 0:
-        print("No hay datos para graficar. El video no será generado.")
-        return None
-        
-    cax = ax.imshow(aggregated_data[0].T, cmap='viridis', interpolation='nearest', origin='lower',
-                    vmin=0, vmax=vmax)
-    fig.colorbar(cax, label='Probabilidad')
+    # Encontrar la probabilidad mínima no nula para establecer el límite inferior
+    non_zero_probs = aggregated_data[aggregated_data > 0]
+    vmin = np.min(non_zero_probs) if len(non_zero_probs) > 0 else 0
+
+    # Si no hay datos o la probabilidad es uniforme, no se puede usar escala log.
+    if vmax == 0 or vmin >= vmax:
+        print("Advertencia: No se pueden generar datos para el heatmap (probabilidades son cero o uniformes).")
+        norm = None
+        cbar_label = "Probabilidad (lineal)"
+    else:
+        # Usar LogNorm. clip=True mapea los valores 0 al color de vmin.
+        norm = colors.LogNorm(vmin=vmin, vmax=vmax, clip=True)
+        cbar_label = "Probabilidad (escala log)"
+
+    # --- Creación del primer fotograma ---
+    cax = ax.imshow(aggregated_data[0].T, cmap='viridis', interpolation='nearest', origin='lower', norm=norm)
+    fig.colorbar(cax, label=cbar_label)
 
     ax.set_xlabel("Número Total de Susceptibles (S_total)")
     ax.set_ylabel("Número Total de Infectados (I_total)")
-    ax.set_title(f"Distribución de Probabilidad P(S_total, I_total) en t=0.0")
     ax.set_xticks(np.arange(N_total + 1))
     ax.set_yticks(np.arange(N_total + 1))
+    ax.set_title(f"Distribución de Probabilidad P(S_total, I_total) en t=0.0")
 
     def animate(i):
-        # Transponemos los datos para que S esté en el eje x e I en el eje y
         cax.set_data(aggregated_data[i].T)
         ax.set_title(f"Distribución de Probabilidad P(S_total, I_total) en t={i * delta_t:.2f}")
         return [cax]
 
-    print(f"Generando animación... Esto puede tardar un momento.")
-    # Intervalo en milisegundos entre fotogramas
+    print(f"Generando animación ({cbar_label})... Esto puede tardar un momento.")
     anim = animation.FuncAnimation(fig, animate, frames=len(history), interval=100, blit=True)
     
-    # Guardar el video
     try:
         anim.save(filename, writer='ffmpeg', fps=10, dpi=100)
         print(f"Video guardado como '{filename}'")
-        plt.close(fig) # Cerrar la figura para no mostrarla en entornos interactivos
-        # Para mostrar en un notebook, se podría devolver HTML(anim.to_jshtml())
+        plt.close(fig)
         return filename
     except Exception as e:
         print(f"Error al guardar el video: {e}")
