@@ -3,7 +3,7 @@ import os
 import numpy as np
 import scipy.sparse as sp
 from .model import generate_transition_matrix
-from .simulation import create_delta_t_matrix, run_simulation
+from .simulation import run_simulation # Ya no se importa create_delta_t_matrix
 from .plotting import create_heatmap_video
 
 def main():
@@ -11,17 +11,15 @@ def main():
     Script principal para simular y visualizar la dinámica de la metapoblación.
     """
     # --- Parámetros de Simulación ---
-    N_total = 6      # Población total (mantener bajo para pruebas)
+    # Ahora puedes intentar con valores más grandes de N_total gracias a la optimización de memoria.
+    N_total = 8      # Población total
     delta_t = 0.5    # Paso de tiempo para la simulación discreta
     num_steps = 100  # Número de pasos a simular
 
     # --- Condición Inicial de la Simulación ---
-    # >>> PUEDES CAMBIAR ESTA LÍNEA PARA CADA SIMULACIÓN <<<
-    # El formato es (s1, i1, r1, s2, i2, r2). La suma debe ser igual a N_total.
     initial_state_tuple = (N_total - 1, 1, 0, 0, 0, 0)
     
     # --- Parámetros del Modelo ---
-    # Estos parámetros se usan para generar H si no se encuentra un archivo guardado.
     params = {
         'beta1': 0.5,
         'gamma1': 0.1,
@@ -58,15 +56,13 @@ def main():
         np.save(states_file, states)
         np.save(state_to_idx_file, state_to_idx)
 
-    # --- Paso 2: Crear Matriz de Paso de Tiempo ---
-    print("\n--- Paso 2: Creando Matriz de Transición P(delta_t) ---")
-    P_delta_t = create_delta_t_matrix(H, delta_t)
-    print(f"Matriz P(delta_t) generada con dimensiones: {P_delta_t.shape}")
+    # --- Paso 2 (eliminado): Ya no se crea la matriz P_delta_t completa ---
+    # print("\n--- Paso 2: Creando Matriz de Transición P(delta_t) ---")
+    # P_delta_t = create_delta_t_matrix(H, delta_t)
 
-    # --- Paso 3: Ejecutar Simulación ---
-    print("\n--- Paso 3: Ejecutando la Simulación ---")
+    # --- Paso 3: Ejecutar Simulación (ahora es el paso 2) ---
+    print("\n--- Paso 2: Ejecutando la Simulación (con optimización de memoria) ---")
     try:
-        # Verificar que la condición inicial sea válida
         if sum(initial_state_tuple) != N_total:
             raise ValueError(f"La suma de los componentes de initial_state_tuple debe ser {N_total}")
 
@@ -76,11 +72,12 @@ def main():
 
         print(f"Condición inicial: {initial_state_tuple}")
         print(f"Simulando por {num_steps} pasos con delta_t = {delta_t}...")
-        history = run_simulation(P_delta_t, initial_vector, num_steps)
+        # La función de simulación ahora necesita H y delta_t directamente
+        history = run_simulation(H, initial_vector, delta_t, num_steps)
         print("Simulación completada.")
 
-        # --- Paso 4: Generar Video ---
-        print("\n--- Paso 4: Generando Video de la Simulación ---")
+        # --- Paso 4: Generar Video (ahora es el paso 3) ---
+        print("\n--- Paso 3: Generando Video de la Simulación ---")
         output_filename = os.path.join("metapop_model", "heatmap_animation.mp4")
         create_heatmap_video(history, list(states), N_total, delta_t, filename=output_filename)
 
