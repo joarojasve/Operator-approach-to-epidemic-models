@@ -1,7 +1,7 @@
 
 import numpy as np
 import itertools
-from scipy.sparse import lil_matrix
+from scipy.sparse import lil_matrix, linalg as splinalg
 
 def get_states(N_total):
     """
@@ -160,3 +160,21 @@ def generate_transition_matrix(N_total, params):
 
     # Convertir a formato CSR para operaciones matriciales eficientes
     return H.tocsr(), states, state_to_idx
+
+def evolve_state_vector(H, initial_vector, t):
+    """
+    Evoluciona el vector de estado en el tiempo usando la exponencial de la matriz.
+
+    Calcula P(t) = expm(H*t) @ P(0)
+
+    Args:
+        H (scipy.sparse.spmatrix): El Hamiltoniano (matriz de transición).
+        initial_vector (np.ndarray): El vector de estado inicial P(0).
+        t (float): El tiempo hasta el cual evolucionar el sistema.
+
+    Returns:
+        np.ndarray: El vector de estado evolucionado P(t).
+    """
+    # expm_multiply es una forma eficiente de calcular la acción de la matriz exponencial
+    # en un vector, sin calcular la matriz exponencial completa.
+    return splinalg.expm_multiply(H * t, initial_vector)

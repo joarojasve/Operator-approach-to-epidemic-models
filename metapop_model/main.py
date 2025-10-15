@@ -1,19 +1,14 @@
 
-from .model import generate_transition_matrix
+from .model import generate_transition_matrix, evolve_state_vector
 import numpy as np
 
 def main():
     """
-    Script principal para probar el generador de la matriz de transición.
+    Script principal para probar el generador de la matriz de transición y la evolución temporal.
     """
     # --- Parámetros del Modelo ---
     # ADVERTENCIA: N_total > 8 puede ser computacionalmente muy intensivo.
-    # Para N_total = 200, la matriz es demasiado grande para ser generada.
     N_total = 4
-
-    # Estado inicial: (s1, i1, r1, s2, i2, r2)
-    # Por ejemplo, 2 susceptibles en el nodo 1 y 2 susceptibles en el nodo 2.
-    initial_state_vector = np.zeros(1) # El tamaño se ajustará después
     
     params = {
         'beta1': 0.3,   # Tasa de infección en la población 1
@@ -28,42 +23,50 @@ def main():
     }
 
     print(f"Generando la matriz de transición para N_total = {N_total}...")
-
     H, states, state_to_idx = generate_transition_matrix(N_total, params)
-
     print(f"La matriz de transición (Hamiltoniano) tiene dimensiones: {H.shape}")
     print(f"Número total de estados posibles: {len(states)}")
-    
-    # --- Prueba con un vector de población inicial ---
-    # Se necesita un vector que represente la probabilidad de estar en cada estado.
-    # Para una simulación, se suele empezar con una certeza del 100% en un estado inicial.
-    
-    # Ejemplo: Empezar con el estado (s1=2, i1=0, r1=0, s2=2, i2=0, r2=0)
+
+    # --- Prueba de Evolución Temporal ---
+    # Estado inicial: Introducimos una infección en el nodo 1.
+    # Empezamos en el estado (s1=3, i1=1, r1=0, s2=0, i2=0, r2=0)
     try:
-        start_state = (1, 1, 0, 2, 0, 0)
+        start_state = (3, 1, 0, 0, 0, 0)
+        if N_total != sum(start_state):
+             # Ajustar el estado inicial si N_total cambia
+             start_state = (N_total - 1, 1, 0, 0, 0, 0) 
+
         start_idx = state_to_idx[start_state]
-        
-        # Vector de estado inicial (un 1 en la posición del estado inicial)
         initial_state_vector = np.zeros(len(states))
         initial_state_vector[start_idx] = 1.0
 
-        print(f"\nProbando la aplicación del Hamiltoniano al vector del estado inicial {start_state}")
+        print(f"\nEstado inicial: {start_state} (Probabilidad = 1.0)")
 
-        # Aplicar el Hamiltoniano al vector de estado
-        # Esto calcula la derivada temporal del vector de probabilidad, dP/dt = H * P
-        dP_dt = H.dot(initial_state_vector)
+        # Tiempo de evolución
+        t = 10.0
+        print(f"Evolucionando el sistema hasta t = {t}...")
 
-        print("Vector de estado inicial (P):")
-        print(initial_state_vector)
+        # Calcular el vector de estado en el tiempo t
+        final_state_vector = evolve_state_vector(H, initial_state_vector, t)
 
-        print("\nResultado de H * P (representa dP/dt en t=0):")
-        # Mostramos solo los elementos no nulos para claridad
-        non_zero_indices = dP_dt.nonzero()[0]
-        for i in non_zero_indices:
-            print(f"  -> Estado {states[i]}: Tasa de cambio = {dP_dt[i]}")
+        print(f"\nDistribución de probabilidad en t = {t}:")
+        # Mostramos los 5 estados más probables para mayor claridad
+        # Se ordenan los índices por la probabilidad descendente
+        most_probable_indices = np.argsort(final_state_vector)[::-1]
+
+        total_prob = 0
+        for i in range(min(5, len(states))):
+            idx = most_probable_indices[i]
+            prob = final_state_vector[idx]
+            if prob > 1e-6: # Solo mostrar si la probabilidad no es despreciable
+                print(f"  -> Estado {states[idx]}: Probabilidad = {prob:.4f}")
+                total_prob += prob
+        
+        print(f"\nSuma de las probabilidades mostradas: {total_prob:.4f}")
+        print(f"Suma total de probabilidades (verificación): {np.sum(final_state_vector):.4f}")
 
     except KeyError:
-        print(f"\nError: El estado inicial (2,0,0,2,0,0) no es válido para N_total = {N_total}.")
+        print(f"\nError: El estado inicial {start_state} no es válido para N_total = {N_total}.")
     except Exception as e:
         print(f"\nOcurrió un error: {e}")
 
